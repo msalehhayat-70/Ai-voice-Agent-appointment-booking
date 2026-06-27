@@ -337,4 +337,5 @@ return [{
 
 ## 📞 Support
 
-Built for personal testing by Saleh. For questions, open n8n execution logs to debug — every node prints detailed `console.log` output visible in the **Executions** panel.
+Built for personal testing. Open n8n execution logs to debug — every node prints detailed `console.log` output visible in the **Executions** panel.
+Always ready to be a part of such intresting projects . For any query fell free to ask .
