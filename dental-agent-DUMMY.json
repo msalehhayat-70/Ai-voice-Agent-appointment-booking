@@ -1,0 +1,182 @@
+{
+  "name": "🦷 Dental Clinic AI Voice Agent (DUMMY - No API Keys Needed)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dental-call",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-1",
+      "name": "📞 Incoming Call Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "notes": "Twilio sends call data here. Path = dental-call. Copy this URL and paste in Twilio Voice webhook."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// NODE: Parse Incoming Twilio Call Data\n// ============================================================\n// Twilio sends form-encoded POST data when a call comes in.\n// We extract all the useful fields here.\n//\n// Fields Twilio sends:\n//   CallSid       - unique ID for this call\n//   Caller        - caller's phone number e.g. +923001234567\n//   SpeechResult  - what the caller said (after Gather)\n//   step          - which step of conversation we are on\n//   collected_*   - data collected in previous steps (passed via URL params)\n\nconst body = $input.first().json.body || $input.first().json;\nconst query = $input.first().json.query || {};\n\n// Get step from query params (URL) — defaults to 1 (first contact)\nconst step = query.step || body.step || '1';\n\n// Get speech from Twilio's Gather result\nconst speechResult = body.SpeechResult || '';\n\n// Caller phone comes from Twilio automatically\nconst callerPhone = body.Caller || query.collected_phone || '';\n\n// Previously collected data (passed in URL between steps)\nconst collectedName     = query.collected_name     || body.collected_name     || '';\nconst collectedPhone    = query.collected_phone    || callerPhone;\nconst collectedDatetime = query.collected_datetime || body.collected_datetime || '';\nconst collectedReason   = query.collected_reason   || body.collected_reason   || '';\nconst callSid           = body.CallSid || 'DUMMY-SID-123';\n\nconsole.log(`[Step ${step}] Speech: \"${speechResult}\"`);\nconsole.log(`Collected so far → Name: ${collectedName}, Phone: ${collectedPhone}, DateTime: ${collectedDatetime}, Reason: ${collectedReason}`);\n\nreturn [{\n  json: {\n    step,\n    speechResult,\n    callSid,\n    collectedName,\n    collectedPhone,\n    collectedDatetime,\n    collectedReason\n  }\n}];"
+      },
+      "id": "node-2",
+      "name": "🔍 Parse Call Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300],
+      "notes": "Parses Twilio POST body + URL query params. No API needed."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// NODE: DUMMY AI Conversation Logic\n// ============================================================\n// In the REAL workflow this calls Gemini API.\n// Here we simulate the AI response with simple logic\n// so you can TEST the full flow without any API key.\n//\n// HOW TO REPLACE WITH REAL GEMINI:\n//   1. Delete this node\n//   2. Add a Google Gemini node\n//   3. Use the prompt from the README\n//   4. Connect it between 'Parse Call Data' and 'Process AI Response'\n\nconst data = $input.first().json;\nconst { step, speechResult, collectedName, collectedPhone, collectedDatetime, collectedReason } = data;\n\nlet aiResponse = '';\nlet name = collectedName;\nlet phone = collectedPhone;\nlet datetime = collectedDatetime;\nlet reason = collectedReason;\nlet isComplete = false;\n\n// Simple keyword extraction (dummy version of what Gemini does)\n// In real version, Gemini extracts these naturally from any sentence\nif (speechResult) {\n  // Try to detect name (Step 1 → patient usually says their name)\n  if (!name && step === '1') {\n    name = speechResult.trim().split(' ').slice(0, 2).join(' ');\n  }\n  // Try to detect date/time keywords\n  if (!datetime && (speechResult.includes('Monday') || speechResult.includes('Tuesday') ||\n      speechResult.includes('Wednesday') || speechResult.includes('Thursday') ||\n      speechResult.includes('Friday') || speechResult.includes('tomorrow') ||\n      speechResult.match(/\\d+(am|pm)/i) || speechResult.match(/\\d+:\\d+/))) {\n    datetime = speechResult.trim();\n  }\n  // Detect reason keywords\n  if (!reason && (speechResult.toLowerCase().includes('clean') || speechResult.toLowerCase().includes('pain') ||\n      speechResult.toLowerCase().includes('check') || speechResult.toLowerCase().includes('tooth') ||\n      speechResult.toLowerCase().includes('ache') || speechResult.toLowerCase().includes('whiten') ||\n      speechResult.toLowerCase().includes('filling') || speechResult.toLowerCase().includes('extraction'))) {\n    reason = speechResult.trim();\n  }\n}\n\n// Determine what to say next based on what's missing\nif (step === '1' || !name) {\n  aiResponse = \"Hello! Thank you for calling Bright Smile Dental. I'm Casey, your virtual receptionist. May I have your full name please?\";\n  name = name || '';\n} else if (!datetime) {\n  aiResponse = `Thank you ${name}! What date and time works best for your appointment?`;\n} else if (!reason) {\n  aiResponse = `Got it, ${datetime}. And what is the reason for your visit today? For example, cleaning, checkup, toothache, or something else?`;\n} else {\n  // All data collected!\n  isComplete = true;\n  aiResponse = `Perfect! I have everything I need. I've booked an appointment for ${name} on ${datetime} for ${reason}. You'll receive a confirmation shortly. Thank you for calling Bright Smile Dental. Goodbye!`;\n}\n\nconsole.log(`[DUMMY AI] Step ${step} → isComplete: ${isComplete}`);\nconsole.log(`[DUMMY AI] Response: ${aiResponse}`);\n\nreturn [{\n  json: {\n    aiResponse,\n    isComplete,\n    name,\n    phone,\n    datetime,\n    reason,\n    callSid: data.callSid,\n    nextStep: String(parseInt(step) + 1)\n  }\n}];"
+      },
+      "id": "node-3",
+      "name": "🤖 DUMMY AI Logic (Replace with Gemini)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300],
+      "notes": "DUMMY: Simulates Gemini AI. Replace this with Google Gemini node when you have API key. See README for exact prompt to use."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "check-complete",
+              "leftValue": "={{ $json.isComplete }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-4",
+      "name": "✅ Booking Complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [860, 300],
+      "notes": "TRUE path → Save to Airtable + Confirm. FALSE path → Continue conversation."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// NODE: DUMMY Airtable Save\n// ============================================================\n// In the REAL workflow, this is an Airtable node that creates a record.\n// Here we just log the data so you can see what WOULD be saved.\n//\n// HOW TO REPLACE WITH REAL AIRTABLE:\n//   1. Delete this node\n//   2. Add an Airtable node (operation: Create Record)\n//   3. Set Base ID and Table Name\n//   4. Map fields as shown in README\n//   5. Connect it between 'Booking Complete? (TRUE)' and 'Build Confirm TwiML'\n\nconst data = $input.first().json;\n\n// This is what gets saved to Airtable in the real version\nconst recordToSave = {\n  'Patient Name': data.name,\n  'Phone': data.phone,\n  'Appointment Date & Time': data.datetime,\n  'Reason for Visit': data.reason,\n  'Status': 'Pending',\n  'Booked At': new Date().toISOString(),\n  'Call SID': data.callSid\n};\n\nconsole.log('========================================');\nconsole.log('DUMMY: Would save to Airtable:');\nconsole.log(JSON.stringify(recordToSave, null, 2));\nconsole.log('========================================');\n\n// Pass data forward\nreturn [{ json: { ...data, savedRecord: recordToSave, saveSuccess: true } }];"
+      },
+      "id": "node-5",
+      "name": "💾 DUMMY Airtable Save (Replace with Airtable node)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 180],
+      "notes": "DUMMY: Logs what would be saved. Replace with real Airtable node. See README for field mapping."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// NODE: Build Final TwiML (Booking Confirmed)\n// ============================================================\n// Sends the confirmation message to the caller and hangs up.\n// Uses Amazon Polly voice 'Joanna' (built into Twilio, free).\n\nconst data = $('🤖 DUMMY AI Logic (Replace with Gemini)').first().json;\n\nconst twiml = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Response>\n  <Say voice=\"Polly.Joanna\" language=\"en-US\">${data.aiResponse}</Say>\n  <Pause length=\"1\"/>\n  <Hangup/>\n</Response>`;\n\nconsole.log('[TwiML - CONFIRM]', twiml);\n\nreturn [{ json: { twiml } }];"
+      },
+      "id": "node-6",
+      "name": "📋 Build Confirm TwiML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 340],
+      "notes": "Builds TwiML that says confirmation and hangs up the call."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// NODE: Build Continue TwiML (Keep Conversation Going)\n// ============================================================\n// Sends AI response to caller and listens for their next reply.\n//\n// IMPORTANT: Replace YOUR-N8N-URL with your actual n8n URL!\n// Example: https://my-app.up.railway.app\n//\n// The collected data is passed forward in URL params between steps.\n// This is how n8n remembers what was said in previous steps.\n\nconst data = $('🤖 DUMMY AI Logic (Replace with Gemini)').first().json;\n\n// ⚠️ REPLACE THIS with your actual n8n base URL\nconst N8N_BASE_URL = 'https://YOUR-N8N-URL';\nconst webhookPath = '/webhook/dental-call';\n\n// Build action URL with collected data as query params\nconst params = new URLSearchParams({\n  step: data.nextStep,\n  collected_name: data.name || '',\n  collected_phone: data.phone || '',\n  collected_datetime: data.datetime || '',\n  collected_reason: data.reason || ''\n});\n\nconst actionUrl = `${N8N_BASE_URL}${webhookPath}?${params.toString()}`;\n\nconst twiml = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Response>\n  <Say voice=\"Polly.Joanna\" language=\"en-US\">${data.aiResponse}</Say>\n  <Gather \n    input=\"speech\" \n    action=\"${actionUrl}\" \n    method=\"POST\" \n    speechTimeout=\"3\"\n    language=\"en-US\"\n    enhanced=\"true\">\n  </Gather>\n  <Redirect method=\"POST\">${actionUrl}</Redirect>\n</Response>`;\n\nconsole.log('[TwiML - CONTINUE]', twiml);\n\nreturn [{ json: { twiml } }];"
+      },
+      "id": "node-7",
+      "name": "🔄 Build Continue TwiML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 500],
+      "notes": "⚠️ Replace YOUR-N8N-URL in the code with your actual n8n URL before testing!"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.twiml }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "node-8",
+      "name": "📤 Respond to Twilio (Confirm)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1300, 340],
+      "notes": "Sends XML back to Twilio. Content-Type must be text/xml."
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.twiml }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "node-9",
+      "name": "📤 Respond to Twilio (Continue)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1300, 500],
+      "notes": "Sends XML back to Twilio. Content-Type must be text/xml."
+    }
+  ],
+  "connections": {
+    "📞 Incoming Call Webhook": {
+      "main": [[{ "node": "🔍 Parse Call Data", "type": "main", "index": 0 }]]
+    },
+    "🔍 Parse Call Data": {
+      "main": [[{ "node": "🤖 DUMMY AI Logic (Replace with Gemini)", "type": "main", "index": 0 }]]
+    },
+    "🤖 DUMMY AI Logic (Replace with Gemini)": {
+      "main": [[{ "node": "✅ Booking Complete?", "type": "main", "index": 0 }]]
+    },
+    "✅ Booking Complete?": {
+      "main": [
+        [{ "node": "💾 DUMMY Airtable Save (Replace with Airtable node)", "type": "main", "index": 0 }],
+        [{ "node": "🔄 Build Continue TwiML", "type": "main", "index": 0 }]
+      ]
+    },
+    "💾 DUMMY Airtable Save (Replace with Airtable node)": {
+      "main": [[{ "node": "📋 Build Confirm TwiML", "type": "main", "index": 0 }]]
+    },
+    "📋 Build Confirm TwiML": {
+      "main": [[{ "node": "📤 Respond to Twilio (Confirm)", "type": "main", "index": 0 }]]
+    },
+    "🔄 Build Continue TwiML": {
+      "main": [[{ "node": "📤 Respond to Twilio (Continue)", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": ["dental", "voice-agent", "twilio", "airtable", "dummy"]
+}
