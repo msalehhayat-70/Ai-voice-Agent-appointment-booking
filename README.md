@@ -1,11 +1,11 @@
-# 🦷 Dental Clinic AI Voice Agent — Full Setup Guide
+#  Dental Clinic AI Voice Agent — Full Setup Guide
 
 > **Stack:** Twilio (calls) → n8n (workflow) → Gemini AI (brain) → Airtable (database)  
 > **Cost:** Free trial on all platforms — no credit card needed to start testing
 
 ---
 
-## 📁 Files in This Package
+##  Files in This Package
 
 | File | Purpose |
 |------|---------|
@@ -14,7 +14,7 @@
 
 ---
 
-## 🧠 How It Works (Big Picture)
+##  How It Works (Big Picture)
 
 ```
 Patient calls Twilio number
@@ -39,7 +39,7 @@ ELSE
 
 ---
 
-## 🚀 PHASE 1 — Test with Dummy Workflow (No APIs Needed)
+##  PHASE 1 — Test with Dummy Workflow (No APIs Needed)
 
 ### Step 1: Import Workflow into n8n
 
@@ -51,7 +51,7 @@ ELSE
 
 ### Step 2: Get Your Webhook URL
 
-1. Click on the **"📞 Incoming Call Webhook"** node
+1. Click on the **" Incoming Call Webhook"** node
 2. Copy the **Production URL** shown — it looks like:
    ```
    https://YOUR-N8N-URL/webhook/dental-call
@@ -60,7 +60,7 @@ ELSE
 
 ### Step 3: Update the Webhook URL Inside Workflow
 
-1. Click on node **"🔄 Build Continue TwiML"**
+1. Click on node **" Build Continue TwiML"**
 2. Find this line in the code:
    ```javascript
    const N8N_BASE_URL = 'https://YOUR-N8N-URL';
@@ -103,7 +103,7 @@ Check n8n **Executions** tab to see full logs of each run.
 
 ---
 
-## 🔑 PHASE 2 — Connect Real Services
+##  PHASE 2 — Connect Real Services
 
 ### A) Set Up Twilio (Free Trial)
 
@@ -119,9 +119,9 @@ Check n8n **Executions** tab to see full logs of each run.
 6. Method: **HTTP POST**
 7. Click **Save**
 
-> ⚠️ **Trial Limitation:** Twilio will play *"This is a Twilio trial call"* before your agent speaks. This goes away when you add $5 to your account.
+>  **Trial Limitation:** Twilio will play *"This is a Twilio trial call"* before your agent speaks. This goes away when you add $5 to your account.
 
-> ⚠️ **Trial Limitation:** You can only call **verified numbers** during trial. Go to Twilio Console → Verified Caller IDs to add your phone.
+>  **Trial Limitation:** You can only call **verified numbers** during trial. Go to Twilio Console → Verified Caller IDs to add your phone.
 
 ---
 
@@ -178,9 +178,9 @@ Check n8n **Executions** tab to see full logs of each run.
 
 ### Replace DUMMY AI node with Gemini:
 
-1. Delete node **"🤖 DUMMY AI Logic (Replace with Gemini)"**
+1. Delete node **" DUMMY AI Logic (Replace with Gemini)"**
 2. Click **"+"** → search **"Google Gemini"**
-3. Add it between `🔍 Parse Call Data` and `✅ Booking Complete?`
+3. Add it between ` Parse Call Data` and ` Booking Complete?`
 4. Configure:
    - **Credential:** your Gemini credential
    - **Model:** `gemini-2.0-flash`
@@ -219,7 +219,7 @@ Rules:
 
 ```javascript
 const aiText = $input.first().json.text || $input.first().json.content || '';
-const prev = $('🔍 Parse Call Data').first().json;
+const prev = $(' Parse Call Data').first().json;
 
 // Extract DATA block
 let extracted = {};
@@ -255,7 +255,7 @@ return [{
 
 ### Replace DUMMY Airtable node with real Airtable node:
 
-1. Delete node **"💾 DUMMY Airtable Save"**
+1. Delete node **" DUMMY Airtable Save"**
 2. Click **"+"** → search **"Airtable"**
 3. Add it in the same position
 4. Configure:
@@ -277,38 +277,38 @@ return [{
 
 ---
 
-## 🧪 Full Test Flow (After Real Connections)
+##  Full Test Flow (After Real Connections)
 
 1. Call your Twilio number from your verified phone
 2. You hear: *"Hello! Thank you for calling Bright Smile Dental..."*
 3. Say your name → AI responds and asks for date
 4. Say a date → AI asks for reason
 5. Say reason → AI confirms and says goodbye
-6. Open Airtable → check **Appointments** table → your record should be there ✅
+6. Open Airtable → check **Appointments** table → your record should be there 
 
 ---
 
-## 🔁 Node Connection Map
+##  Node Connection Map
 
 ```
-[📞 Incoming Call Webhook]
+[ Incoming Call Webhook]
          ↓
-[🔍 Parse Call Data]
+[ Parse Call Data]
          ↓
-[🤖 Gemini AI] ← replace dummy node
+[ Gemini AI] ← replace dummy node
          ↓
-[✅ Booking Complete?]
+[ Booking Complete?]
     ↓ TRUE            ↓ FALSE
-[💾 Airtable]    [🔄 Continue TwiML]
+[ Airtable]    [ Continue TwiML]
     ↓                  ↓
-[📋 Confirm TwiML] [📤 Respond to Twilio]
+[ Confirm TwiML] [ Respond to Twilio]
     ↓
-[📤 Respond to Twilio]
+[ Respond to Twilio]
 ```
 
 ---
 
-## ❓ Troubleshooting
+##  Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
@@ -322,7 +322,7 @@ return [{
 
 ---
 
-## 💰 Cost Summary
+##  Cost Summary
 
 | Service | Free Tier | Enough For |
 |---------|----------|-----------|
@@ -335,7 +335,7 @@ return [{
 
 ---
 
-## 📞 Support
+##  Support
 
 Built for personal testing. Open n8n execution logs to debug — every node prints detailed `console.log` output visible in the **Executions** panel.
 Always ready to be a part of such intresting projects . For any query fell free to ask .
